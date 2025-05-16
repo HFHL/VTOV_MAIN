@@ -87,7 +87,7 @@ def generate_image(text, prompt):
 
         time.sleep(0.1)
 
-    return response
+    return url
 
 # main
 if __name__ == "__main__":
@@ -95,11 +95,21 @@ if __name__ == "__main__":
     # print(text_length)
     # print(text)
 
-    text = "存在主义是一个哲学的非理性主义思潮，该术语被用在十九世纪晚期到二十世纪的一些哲学家的工作上，尽管他们的学说相差巨大，但他们都相信哲学思考开始于人类主体——而不仅仅是思维主体，而且包括行为、感知、人类个体。"
+    text = "Anarchism is a political philosophy and movement that is skeptical of all justifications for authority and seeks to abolish the institutions it claims maintain unnecessary coercion and hierarchy, typically including nation-states, and capitalism."
 
-    original_prompt = "A realistic image of a white A4 paper with clear printed text in a standard font. The text should be neatly aligned and evenly spaced, resembling a document printed by a laser printer. The paper should be placed flat on a desk or surface, with no visible creases or distortions. The font should be legible and professional, as if it were a formal printed document.The string you need to print is as follows:"
+
+    # original_prompt = "Front view.A realistic image of a white A4 paper with clear printed text in a standard font. The text should be neatly aligned and evenly spaced, resembling a document printed by a laser printer. The paper should be placed flat on a desk or surface, with no visible creases or distortions. The font should be legible and professional, as if it were a formal printed document.The string you need to print is as follows:"
+    original_prompt = "Generate a picture of black text on white paper. The text content in the picture is as follows:"
     prompt = original_prompt + " " + text
-    response = generate_image(text, prompt)
+    response_url = generate_image(text, prompt)
+    # 将原始文本，生成的图片保存在本地。需要json来指定原始文本以及生成的图片的path。
+    # 创建json文件，文件名称为text.json，文件内容为原始文本和生成的图片的path。
+    json_data = {
+        "text": text,
+        "image_path": response_url
+    }
+    with open("text.json", "w") as f:
+        json.dump(json_data, f)
 
 
 
