@@ -1,16 +1,15 @@
-import sqlite3
-import requests
 import json
 import time
 import os
-import shutil
 from urllib.request import urlretrieve
-import random
 import argparse
 from google import genai
 from google.genai import types
 from PIL import Image
 from io import BytesIO
+
+from dotenv import load_dotenv
+load_dotenv()
 
 # 设置读取SQLite记录的数量
 NUM_RECORDS_TO_PROCESS = 5  # 可以修改这个数字来控制处理的记录数量
@@ -92,7 +91,7 @@ def generate_image(text, prompt, model_name):
     返回:
         成功时返回图片URL，失败时返回None
     """
-    API_KEY = "AIzaSyDAlR5-Y8tZslkLJQjOCwC_kV-m9-kaeSs"
+    API_KEY = os.getenv("GOOGLE_API_KEY")
     client = genai.Client(api_key=API_KEY)
     begin = time.time()
     print(f"开始生成图片，文本长度: {len(text)}")
