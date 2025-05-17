@@ -1,0 +1,128 @@
+{
+  "evaluation_config": {
+    "ocr_language": "eng",
+    "ocr_psm": 3
+  },
+  "individual_results": [
+    {
+      "text_file": "dataset_gemini/1000/1.txt",
+      "image_file": "dataset_gemini/1000/1.png",
+      "status": "Success",
+      "strict_sequence_similarity (Full)": 0.7078596144340089,
+      "strict_sequence_similarity (Truncated)": 0.6605968639352554,
+      "strict_wer (Full)": 0.2867132867132867,
+      "strict_wer (Truncated)": 0.362962962962963,
+      "strict_cer (Full)": 1.0,
+      "strict_cer (Truncated)": 1.0,
+      "ground_truth_len_raw_chars": 1000,
+      "ocr_text_len_raw_chars": 1028,
+      "ground_truth_tokens": 143,
+      "ocr_tokens": 135
+    },
+    {
+      "text_file": "dataset_gemini/1000/2.txt",
+      "image_file": "dataset_gemini/1000/2.png",
+      "status": "Success",
+      "strict_sequence_similarity (Full)": 0.5783619817997978,
+      "strict_sequence_similarity (Truncated)": 0.5869676757311442,
+      "strict_wer (Full)": 0.062111801242236024,
+      "strict_wer (Truncated)": 0.08917197452229299,
+      "strict_cer (Full)": 1.0,
+      "strict_cer (Truncated)": 1.0,
+      "ground_truth_len_raw_chars": 1000,
+      "ocr_text_len_raw_chars": 984,
+      "ground_truth_tokens": 161,
+      "ocr_tokens": 157
+    },
+    {
+      "text_file": "dataset_gemini/1000/3.txt",
+      "image_file": "dataset_gemini/1000/3.png",
+      "status": "Success",
+      "strict_sequence_similarity (Full)": 0.7112887112887113,
+      "strict_sequence_similarity (Truncated)": 0.7152184831742843,
+      "strict_wer (Full)": 0.27647058823529413,
+      "strict_wer (Truncated)": 0.2781065088757396,
+      "strict_cer (Full)": 1.0,
+      "strict_cer (Truncated)": 1.0,
+      "ground_truth_len_raw_chars": 1000,
+      "ocr_text_len_raw_chars": 1013,
+      "ground_truth_tokens": 170,
+      "ocr_tokens": 169
+    },
+    {
+      "text_file": "dataset_gemini/1000/4.txt",
+      "image_file": "dataset_gemini/1000/4.png",
+      "status": "Success",
+      "strict_sequence_similarity (Full)": 0.6125498007968128,
+      "strict_sequence_similarity (Truncated)": 0.6180904522613065,
+      "strict_wer (Full)": 0.16363636363636364,
+      "strict_wer (Truncated)": 0.18518518518518517,
+      "strict_cer (Full)": 1.0,
+      "strict_cer (Truncated)": 1.0,
+      "ground_truth_len_raw_chars": 1000,
+      "ocr_text_len_raw_chars": 1017,
+      "ground_truth_tokens": 165,
+      "ocr_tokens": 162
+    },
+    {
+      "text_file": "dataset_gemini/1000/5.txt",
+      "image_file": "dataset_gemini/1000/5.png",
+      "status": "Success",
+      "strict_sequence_similarity (Full)": 0.19908583037074656,
+      "strict_sequence_similarity (Truncated)": 0.19121447028423771,
+      "strict_wer (Full)": 0.449438202247191,
+      "strict_wer (Truncated)": 0.4853801169590643,
+      "strict_cer (Full)": 1.0,
+      "strict_cer (Truncated)": 1.0,
+      "ground_truth_len_raw_chars": 1000,
+      "ocr_text_len_raw_chars": 973,
+      "ground_truth_tokens": 178,
+      "ocr_tokens": 171
+    }
+  ],
+  "aggregate_statistics": {
+    "total_pairs_processed": 5,
+    "successful_evaluations": 5,
+    "failed_evaluations": 0,
+    "total_ground_truth_chars": 5000,
+    "total_ground_truth_tokens": 817,
+    "total_ocr_chars": 5015,
+    "total_ocr_tokens": 794,
+    "strict_sequence_similarity (Full)": {
+      "mean": 0.5618291877380155,
+      "std_dev": 0.08462970026291526,
+      "ci_lower": 0.37738163684014975,
+      "ci_upper": 0.6901692904484505
+    },
+    "strict_sequence_similarity (Truncated)": {
+      "mean": 0.5544175890772457,
+      "std_dev": 0.08256843965233747,
+      "ci_lower": 0.3642415901038226,
+      "ci_upper": 0.6763672708090932
+    },
+    "strict_wer (Full)": {
+      "mean": 0.24767404841487428,
+      "std_dev": 0.056404947340873916,
+      "ci_lower": 0.1455933835984987,
+      "ci_upper": 0.3597328514182446
+    },
+    "strict_wer (Truncated)": {
+      "mean": 0.280161349701049,
+      "std_dev": 0.06626018877415119,
+      "ci_lower": 0.1467799009200283,
+      "ci_upper": 0.41192982456140353
+    },
+    "strict_cer (Full)": {
+      "mean": 1.0,
+      "std_dev": 0.0,
+      "ci_lower": 1.0,
+      "ci_upper": 1.0
+    },
+    "strict_cer (Truncated)": {
+      "mean": 1.0,
+      "std_dev": 0.0,
+      "ci_lower": 1.0,
+      "ci_upper": 1.0
+    }
+  }
+}
