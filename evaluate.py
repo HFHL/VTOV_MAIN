@@ -3,7 +3,13 @@ import json
 import argparse
 import numpy as np
 from typing import List, Dict, Tuple, Any, Optional
-import core # Assuming your updated evaluate_document_image is in core.py
+
+TOKENIZER = "CLIP"
+
+if TOKENIZER == "CLIP":
+    import core_clip as core
+else:
+    import core
 
 def get_text_image_pairs(path: str) -> List[Tuple[str, str]]:
     """
@@ -173,6 +179,8 @@ def evaluate_pairs(
     wers_truncated = []
     cers = []
     cers_truncated = []
+    neds = []
+    neds_truncated = []
     gt_char_counts = []
     gt_token_counts = []
     ocr_char_counts = []
@@ -218,9 +226,11 @@ def evaluate_pairs(
                     "strict_sequence_similarity (Full)": None,
                     "strict_sequence_similarity (Truncated)": None,
                     "strict_wer (Full)": None,
-                    "strict_wer (Truncated)"
+                    "strict_wer (Truncated)": None,
                     "strict_cer (Full)": None,
                     "strict_cer (Truncated)": None,
+                    "strict_ned (Full)": None,
+                    "strict_ned (Truncated)": None,
                     "ground_truth_len_raw_chars": None,
                     "ocr_text_len_raw_chars": None,
                     "ground_truth_tokens": None,
@@ -239,6 +249,8 @@ def evaluate_pairs(
                 "strict_wer (Truncated)": eval_metrics['strict_wer (Truncated)'],
                 "strict_cer (Full)": eval_metrics['strict_cer (Full)'],
                 "strict_cer (Truncated)": eval_metrics['strict_cer (Truncated)'],
+                "strict_ned (Full)": eval_metrics['strict_ned (Full)'],
+                "strict_ned (Truncated)": eval_metrics['strict_ned (Truncated)'],
                 "ground_truth_len_raw_chars": eval_metrics['ground_truth_len_raw_chars'],
                 "ocr_text_len_raw_chars": eval_metrics['ocr_text_len_raw_chars'],
                 "ground_truth_tokens": eval_metrics['ground_truth_tokens'],
@@ -257,6 +269,9 @@ def evaluate_pairs(
             cers.append(eval_metrics['strict_cer (Full)'])
             cers_truncated.append(eval_metrics['strict_cer (Truncated)'])
 
+            neds.append(eval_metrics['strict_ned (Full)'])
+            neds_truncated.append(eval_metrics['strict_ned (Truncated)'])
+
             gt_char_counts.append(eval_metrics['ground_truth_len_raw_chars'])
             gt_token_counts.append(eval_metrics['ground_truth_tokens'])
             
@@ -267,7 +282,8 @@ def evaluate_pairs(
 
             print(f"Metrics: Sim={eval_metrics['strict_sequence_similarity (Full)']:.4f}, Sim (Trunc)={eval_metrics['strict_sequence_similarity (Truncated)']:.4f}, "
                     f"WER={eval_metrics['strict_wer (Full)']:.4f}, WER (Trunc)={eval_metrics['strict_wer (Truncated)']:.4f}, "
-                    f"CER={eval_metrics['strict_cer (Full)']:.4f}, CER (Trunc)={eval_metrics['strict_cer (Truncated)']:.4f}")
+                    f"CER={eval_metrics['strict_cer (Full)']:.4f}, CER (Trunc)={eval_metrics['strict_cer (Truncated)']:.4f}, "
+                    f"NED={eval_metrics['strict_ned (Full)']:.4f}, NED (Trunc)={eval_metrics['strict_ned (Truncated)']:.4f}")
 
             print("-" * 50)
 
@@ -286,6 +302,8 @@ def evaluate_pairs(
                     "strict_wer (Truncated)": None,
                     "strict_cer (Full)": None,
                     "strict_cer (Truncated)": None,
+                    "strict_ned (Full)": None,
+                    "strict_ned (Truncated)": None,
                     "ground_truth_len_raw_chars": None,
                     "ocr_text_len_raw_chars": None,
                     "ground_truth_tokens": None,
@@ -300,9 +318,11 @@ def evaluate_pairs(
     sim_stats = bootstrap_statistics(similarities, metric_name="Sequence Similarity")
     wer_stats = bootstrap_statistics(wers, metric_name="Word Error Rate")
     cer_stats = bootstrap_statistics(cers, metric_name="Character Error Rate")
+    ned_stats = bootstrap_statistics(neds, metric_name="Normalized Edit Distance")
     sim_stats_truncated = bootstrap_statistics(similarities_truncated, metric_name="Sequence Similarity (Truncated)")
     wer_stats_truncated = bootstrap_statistics(wers_truncated, metric_name="Word Error Rate (Truncated)")
     cer_stats_truncated = bootstrap_statistics(cers_truncated, metric_name="Character Error Rate (Truncated)")
+    ned_stats_truncated = bootstrap_statistics(neds_truncated, metric_name="Normalized Edit Distance (Truncated)")
 
     # Create final results dictionary
     final_results = {
@@ -325,6 +345,8 @@ def evaluate_pairs(
             "strict_wer (Truncated)": wer_stats_truncated,
             "strict_cer (Full)": cer_stats,
             "strict_cer (Truncated)": cer_stats_truncated,
+            "strict_ned (Full)": ned_stats,
+            "strict_ned (Truncated)": ned_stats_truncated,
         },
     }
 
@@ -434,6 +456,8 @@ def main():
     print_metric_stats("Word Error Rate (Lower=Better)", stats["strict_wer (Truncated)"])
     print_metric_stats("Character Error Rate (Lower=Better)", stats["strict_cer (Full)"])
     print_metric_stats("Character Error Rate (Lower=Better)", stats["strict_cer (Truncated)"])
+    print_metric_stats("Normalized Edit Distance (Lower=Better)", stats["strict_ned (Full)"])
+    print_metric_stats("Normalized Edit Distance (Lower=Better)", stats["strict_ned (Truncated)"])
 
     print("====================================")
 

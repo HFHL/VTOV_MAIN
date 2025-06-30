@@ -1,2 +1,10 @@
 .DS_Store
 
+*.txt
+*.png
+
+*.json
+*.sqlite
+*.csv
+*.log
+*.ipynb

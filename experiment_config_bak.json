@@ -1,0 +1,56 @@
+{
+  "short": {
+    "models": [
+      "imagen",
+      "gemini"
+    ],
+    "content_lengths": [
+      50, 100, 200, 300, 400, 600, 800, 1000, 1500, 2000
+    ],
+    "limit": 20,
+    "input_files": [
+      "wikipedia_fr_20231101_random_20_5000_cleaned.json",
+      "wikipedia_zh_20231101_random_20_5000_cleaned.json"
+    ]
+  },
+  "long": {
+    "models": [
+      "imagen",
+      "gemini"
+    ],
+    "content_lengths": [
+      3000, 4000, 5000
+    ],
+    "limit": 5,
+    "input_files": [
+      "wikipedia_fr_20231101_random_20_5000_cleaned.json",
+      "wikipedia_zh_20231101_random_20_5000_cleaned.json"
+    ]
+  },
+  "short_en": {
+    "models": [
+      "imagen",
+      "gemini"
+    ],
+    "content_lengths": [
+      50, 100, 200, 300, 400, 600, 800, 1000, 1500, 2000
+    ],
+    "limit": 50,
+    "input_files": [
+      "wikipedia_en_20231101_random_50_5000_cleaned.json"
+    ]
+  },
+  "long_en": {
+    "models": [
+      "imagen",
+      "gemini"
+    ],
+    "content_lengths": [
+      3000, 4000, 5000
+    ],
+    "limit": 5,
+    "input_files": [
+      "wikipedia_en_20231101_random_50_5000_cleaned.json"
+    ]
+  }
+}

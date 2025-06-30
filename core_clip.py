@@ -25,11 +25,23 @@ def strict_text_processing(text: str) -> str:
     # Remove leading/trailing whitespace
     return processed_text.strip()
 
+
+
+from typing import List
+from transformers import CLIPTokenizer
+
+# Load CLIP tokenizer (e.g., from OpenAI's CLIP model)
+tokenizer = CLIPTokenizer.from_pretrained("openai/clip-vit-base-patch32")
+
 def tokenize(text: str) -> List[str]:
-    """Splits text into tokens based on spaces."""
+    """Tokenizes text using CLIP's tokenizer and returns a list of string tokens."""
     if not text:
         return []
-    return text.split(' ')  # Simple space-based tokenization
+    
+    tokens = tokenizer.tokenize(text)  # This gives you a list of string tokens
+    return tokens
+
+
 
 def extract_text_from_image(
     image_path: str, lang: str = 'eng', psm: int = 3

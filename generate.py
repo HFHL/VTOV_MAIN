@@ -21,35 +21,59 @@ def create_directory(dataset_dir="dataset"):
     print(f"Created directory: {dataset_dir}")
 
 # 读取sqlite中的数据
-def read_sqlite_data(file_path, limit=None):
+def read_data(file_path, limit=None, start_idx=0):
     """
-    从SQLite数据库中读取数据
+    从SQLite数据库中读取数据或JSON文件
     
     参数:
-        file_path: SQLite数据库文件路径
+        file_path: SQLite数据库文件路径或JSON文件路径
         limit: 限制读取的记录数，None表示读取所有记录
+        start_idx: 开始读取的记录索引，用于并行处理
         
     返回:
         包含rowid和text的记录列表
     """
-    # conn = sqlite3.connect(file_path)
-    # cursor = conn.cursor()
-    
-    # if limit:
-    #     cursor.execute("SELECT rowid, text FROM wikipedia_en_20231101 LIMIT ?", (limit,))
-    # else:
-    #     cursor.execute("SELECT rowid, text FROM wikipedia_en_20231101")
-    
-    # records = []
-    # for row in cursor:
-    #     records.append({"rowid": row[0], "text": row[1]})
-    
-    # conn.close()
-    # print(f"从数据库读取了 {len(records)} 条记录")
-    with open("dataset_gt5000chars_20records.json", "r", encoding="utf-8") as f:
-        records = json.load(f)
-    records = records[:limit]
-    return records
+    # 检查文件扩展名
+
+    if limit is None or limit <= 0:
+        return []
+
+    if file_path.endswith(".sqlite"):
+        # SQLite 读取逻辑 (注释掉的代码)
+        # conn = sqlite3.connect(file_path)
+        # cursor = conn.cursor()
+        
+        # if limit:
+        #     cursor.execute("SELECT rowid, text FROM wikipedia_en_20231101 LIMIT ?", (limit,))
+        # else:
+        #     cursor.execute("SELECT rowid, text FROM wikipedia_en_20231101")
+        
+        # records = []
+        # for row in cursor:
+        #     records.append({"rowid": row[0], "text": row[1]})
+        
+        # conn.close()
+        # print(f"从数据库读取了 {len(records)} 条记录")
+        print(f"Warning: SQLite support is currently disabled. Please use a JSON file instead.")
+        return []
+    else:
+        # 假设其他文件都是JSON
+        try:
+            with open(file_path, "r", encoding="utf-8") as f:
+                records = json.load(f)
+            
+            # Get total record count for information
+            total_records = len(records)
+            
+            # Apply start_idx and limit
+            end_idx = start_idx + limit if limit else None
+            filtered_records = records[start_idx:end_idx]
+            
+            print(f"Read {len(filtered_records)} records from {file_path} (records {start_idx} to {start_idx + len(filtered_records) - 1 if filtered_records else start_idx} out of {total_records})")
+            return filtered_records
+        except Exception as e:
+            print(f"Error reading file {file_path}: {str(e)}")
+            return []
 
 # 生成截取不同长度的文本
 def prepare_text(text, length=1000):
@@ -91,45 +115,49 @@ def generate_image(text, prompt, model_name):
     返回:
         成功时返回图片URL，失败时返回None
     """
-    API_KEY = os.getenv("GOOGLE_API_KEY")
+    API_KEY = "AIzaSyCQbK5vLn10FTiJsulsrEmsbH9UFM_omlM"
     client = genai.Client(api_key=API_KEY)
     begin = time.time()
     print(f"开始生成图片，文本长度: {len(text)}")
     image = None
     
-    try:
-        if model_name == "imagen":
-            response = client.models.generate_images(
-                model='imagen-3.0-generate-002',
-                prompt=prompt,
-                config=types.GenerateImagesConfig(
-                    number_of_images=1,
-                    include_rai_reason=True,
-                    output_mime_type='image/jpeg',
+    for i in range(5):
+        if i > 0:
+            print(f"重试第 {i+1} 次")
+        try:
+            if model_name == "imagen":
+                response = client.models.generate_images(
+                    model='imagen-3.0-generate-002',
+                    prompt=prompt,
+                    config=types.GenerateImagesConfig(
+                        number_of_images=1,
+                        include_rai_reason=True,
+                        output_mime_type='image/jpeg',
+                    )
                 )
-            )
-            image = Image.open(BytesIO(response.generated_images[0].image.image_bytes))
+                image = Image.open(BytesIO(response.generated_images[0].image.image_bytes))
 
-        elif model_name == "gemini":
-            response = client.models.generate_content(
-            model="gemini-2.0-flash-preview-image-generation",
-            contents=prompt,
-            config=types.GenerateContentConfig(
-                response_modalities=['IMAGE', 'TEXT']
+            elif model_name == "gemini":
+                response = client.models.generate_content(
+                model="gemini-2.0-flash-preview-image-generation",
+                contents=prompt,
+                config=types.GenerateContentConfig(
+                    response_modalities=['IMAGE', 'TEXT']
+                    )
                 )
-            )
-            for part in response.candidates[0].content.parts:
-                if part.inline_data is not None:
-                    image = Image.open(BytesIO(part.inline_data.data))
-                    # image.show()
-                    break
-            
-        end = time.time()
-        print(f"任务完成，耗时 {end - begin:.2f} 秒")
-        return image
-    except Exception as err:
-        print(f"任务失败: {str(err)}")
-        return None
+                for part in response.candidates[0].content.parts:
+                    if part.inline_data is not None:
+                        image = Image.open(BytesIO(part.inline_data.data))
+                        # image.show()
+                        break
+                
+            end = time.time()
+            print(f"任务完成，耗时 {end - begin:.2f} 秒")
+            return image
+        except Exception as err:
+            print(f"任务失败: {str(err)}")
+            time.sleep(1)
+    return None
 
 def save_image(image, filepath):
     """
@@ -194,33 +222,19 @@ def save_text(text, filepath):
         return False
 
 # 主函数
-def main(sqlite_path, limit=5, model_name="imagen", prompt_id=0, text_length=1000, dataset_dir="dataset"):
+def main(sqlite_path, limit=5, model_name="imagen", text_length=1000, dataset_dir="dataset", start_idx=0):
     # 使用传入的text_length参数
     
     # 创建目录
     create_directory(dataset_dir)
     
-    # 读取数据库
-    records = read_sqlite_data(sqlite_path, limit)
-    
-    # 定义不同的提示词
-    prompts = [
-        "Generate a scanned document image with following text:",
-        "Create a mockup of a scanned document containing the text:",
-        "Design a sample document scan with the following text:",
-        "Generate an image of printed note that include this text:",
-        "Produce an image of a typed document page with the following text:",
-        "Generate a document scan visualization showing this text:",
-        "Produce a sample of how a scanned memo might look with this text:",
-        "Generate an image of a plain Word document with black text on white background without decorative elements, document should contain this text:"
-    ]
-    
-    # 选择提示词
-    if 0 <= prompt_id < len(prompts):
-        original_prompt = prompts[prompt_id]
-    else:
-        print(f"Warning: Invalid prompt_id {prompt_id}, using default prompt")
-        original_prompt = prompts[0]
+    # 读取数据库，直接应用start_idx和limit
+    records = read_data(sqlite_path, limit=limit, start_idx=start_idx)
+    if not records:
+        print(f"No records found to process from {sqlite_path}")
+        return
+
+    original_prompt = "Produce an image of a typed document page with the following text:"
     
     # 记录所有生成结果
     generation_log = []
@@ -251,7 +265,7 @@ def main(sqlite_path, limit=5, model_name="imagen", prompt_id=0, text_length=100
             # 定义文件路径 - 使用os.path.join确保路径正确
             text_filepath = os.path.join(dataset_dir, f"{rowid}.txt")
             image_filepath = os.path.join(dataset_dir, f"{rowid}.png")
-                
+
             # 保存文本
             text_saved = save_text(variant_text, text_filepath)
             
@@ -266,14 +280,6 @@ def main(sqlite_path, limit=5, model_name="imagen", prompt_id=0, text_length=100
             })
         else:
             generation_info["status"] = "failed"
-        
-        # 添加到日志
-        generation_log.append(generation_info)
-        
-        # 记录当前进度到临时文件（放在dataset_dir目录内）
-        log_temp_path = os.path.join(dataset_dir, "generation_log_temp.json")
-        with open(log_temp_path, "w", encoding="utf-8") as f:
-            json.dump(generation_log, f, ensure_ascii=False, indent=2)
         
         # 休息一下，避免API请求过快
         time.sleep(1)
@@ -296,24 +302,27 @@ if __name__ == "__main__":
                         help="Model to use for image generation")
     parser.add_argument("--content_length", type=int, default=1000,
                         help="Content length to process")
-    parser.add_argument("--prompt_id", type=int, default=0,
-                        help="ID of the prompt template to use (0, 1, or 2)")
+
     parser.add_argument("--limit", type=int, default=NUM_RECORDS_TO_PROCESS,
                         help="Number of records to process from the database")
-    parser.add_argument("--sqlite_path", type=str, default="wikipedia_en_20231101.sqlite",
-                        help="Path to the SQLite database file")
+    parser.add_argument("--file_path", type=str, default="wikipedia_en_20231101_random_30.json",
+                        help="Path to the input file (JSON or SQLite)")
     parser.add_argument("--dataset_dir", type=str, default="dataset",
                         help="Directory to store the generated dataset")
+    parser.add_argument("--start_idx", type=int, default=0,
+                        help="Starting index for records in the input file (for parallel processing)")
     
     # 解析命令行参数
     args = parser.parse_args()
+
+    print(args)
     
     # 从数据库中读取指定数量的记录进行测试
     main(
-        sqlite_path=args.sqlite_path,
+        sqlite_path=args.file_path,
         limit=args.limit,
         model_name=args.model,
-        prompt_id=args.prompt_id,
         text_length=args.content_length,
-        dataset_dir=args.dataset_dir
+        dataset_dir=args.dataset_dir,
+        start_idx=args.start_idx
     )
