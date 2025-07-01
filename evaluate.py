@@ -3,6 +3,7 @@ import json
 import argparse
 import numpy as np
 from typing import List, Dict, Tuple, Any, Optional
+from paddleocr import PaddleOCR
 
 TOKENIZER = "CLIP"
 
@@ -155,6 +156,7 @@ def bootstrap_statistics(
 
 def evaluate_pairs(
     pairs: List[Tuple[str, str]],
+    ocr_engine_name: str,
     ocr_lang: str,
     ocr_psm: int,
     verbose: bool = False,
@@ -188,6 +190,17 @@ def evaluate_pairs(
     successful_evals = 0
     failed_evals = 0
 
+    if ocr_engine_name == "paddleocr":
+        ocr_engine = PaddleOCR(
+            lang=ocr_lang,
+            device="gpu",
+            use_doc_orientation_classify=False, 
+            use_doc_unwarping=False, 
+            use_textline_orientation=False
+        )
+    else:
+        ocr_engine = None
+
     for i, (text_path, image_path) in enumerate(pairs):
         print(
             f"\n--- Evaluating Pair {i+1}/{len(pairs)} ---"
@@ -212,7 +225,9 @@ def evaluate_pairs(
                 generated_image_path=image_path,
                 ocr_lang=ocr_lang,
                 ocr_psm=ocr_psm,
-                verbose=verbose # Pass verbose flag down
+                verbose=verbose, # Pass verbose flag down
+                ocr_engine_name=ocr_engine_name,
+                ocr_engine=ocr_engine
             )
 
             if eval_metrics is None:
@@ -368,6 +383,8 @@ def main():
     )
 
     # OCR Options (mirrored from core evaluator)
+    parser.add_argument("-e", "--ocr_engine", type=str, default="paddleocr")
+
     parser.add_argument(
         "-l", "--lang", default='eng',
         help="Tesseract language code(s) (e.g., 'eng', 'eng+fra')."
@@ -416,6 +433,7 @@ def main():
     print("\nStarting evaluation of pairs...")
     results = evaluate_pairs(
         pairs=pairs,
+        ocr_engine_name = args.ocr_engine,
         ocr_lang=args.lang,
         ocr_psm=args.psm,
         verbose=args.verbose

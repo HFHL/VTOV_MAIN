@@ -41,8 +41,6 @@ def tokenize(text: str) -> List[str]:
     tokens = tokenizer.tokenize(text)  # This gives you a list of string tokens
     return tokens
 
-
-
 def extract_text_from_image(
     image_path: str, lang: str = 'eng', psm: int = 3
 ) -> Optional[str]:
@@ -88,6 +86,23 @@ def extract_text_from_image(
         # Return empty string here, as OCR ran but failed partially,
         # allowing evaluation metrics to show maximum error.
         return ""
+
+def extract_text_from_image_paddleocr(
+    image_path: str, lang: str = 'en', psm: int = 3, ocr_engine=None
+) -> Optional[str]:
+    if not os.path.exists(image_path):
+        print(f"Error: Image file not found at '{image_path}'")
+        return None  # Indicate critical failure: file missing
+    try:
+        results = ocr_engine.predict(image_path)
+        texts = []
+        for res in results:
+            texts.append(" ".join(res['rec_texts']))
+        return " ".join(texts)
+    except Exception as e:
+        print(f"Error during OCR processing for '{image_path}': {e}")
+        return ""
+
 
 # --- Evaluation Metrics ---
 
@@ -168,7 +183,9 @@ def evaluate_document_image(
     generated_image_path: str,
     ocr_lang: str = 'eng',
     ocr_psm: int = 3,
-    verbose: bool = False
+    verbose: bool = False,
+    ocr_engine_name: str = "paddleocr",
+    ocr_engine = None,
 ) -> Optional[Dict[str, Any]]:
     """
     Evaluates the generated document image against the ground truth text
@@ -192,8 +209,12 @@ def evaluate_document_image(
 
     # 1. Extract text using OCR
     print("\nStep 1: Extracting text via OCR...")
-    ocr_text_raw = extract_text_from_image(
-        generated_image_path, lang=ocr_lang, psm=ocr_psm)
+    if ocr_engine_name == "tesseract":
+        ocr_text_raw = extract_text_from_image(
+            generated_image_path, lang=ocr_lang, psm=ocr_psm)
+    elif ocr_engine_name == "paddleocr":
+        ocr_text_raw = extract_text_from_image_paddleocr(
+            generated_image_path, lang=ocr_lang, ocr_engine=ocr_engine)
 
     if ocr_text_raw is None:
         print("OCR failed critically (Tesseract/File/Dependency Error). Cannot proceed.")

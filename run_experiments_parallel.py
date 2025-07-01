@@ -7,8 +7,7 @@ from datetime import datetime
 import subprocess
 import re
 from collections import defaultdict
-
-# 200, 400, 1000, 1500, 5000
+from pathlib import Path
 
 def create_results_directory():
     """Create a timestamp-based results directory"""
@@ -33,6 +32,14 @@ def map_tesseract_lang(lang_code):
         "zh": "chi_sim+chi_tra"
     }
     return lang_map.get(lang_code, "eng")
+
+def map_paddleocr_lang(lang_code):
+    lang_map = {
+        "en": "en",
+        "zh": "ch",
+        "fr": "fr"
+    }
+    return lang_map.get(lang_code, "en")
 
 def run_generation_task(model, length, dataset_dir, input_file, limit, thread_id, total_threads):
     """Run a single generation task with a subset of records"""
@@ -139,7 +146,8 @@ def run_experiment_set(setting_name, models, content_lengths, limit, input_file,
     
     # Process language settings
     lang_code = extract_language_code(input_file)
-    tesseract_lang = map_tesseract_lang(lang_code)
+    # tesseract_lang = map_tesseract_lang(lang_code)
+    paddleocr_lang = map_paddleocr_lang(lang_code)
     
     # Create setting directory
     input_file_name = os.path.splitext(os.path.basename(input_file))[0]
@@ -151,7 +159,9 @@ def run_experiment_set(setting_name, models, content_lengths, limit, input_file,
     print(f"Content Lengths: {' '.join(map(str, content_lengths))}")
     print(f"Limit: {limit}")
     print(f"Input File: {input_file}")
-    print(f"Language Code: {lang_code} (Tesseract: {tesseract_lang})")
+    # print(f"Language Code: {lang_code} (Tesseract: {tesseract_lang})")
+    print(f"Language Code: {lang_code} (PaddleOCR: {paddleocr_lang})")
+    
     print(f"Using {num_threads} threads")
     print("--------------------------------")
     
@@ -203,7 +213,8 @@ def run_experiment_set(setting_name, models, content_lengths, limit, input_file,
                     "python", "evaluate.py",
                     "-i", dataset_dir,
                     "-o", results_file,
-                    "-l", tesseract_lang
+                    "-l", paddleocr_lang
+                    # "-l", tesseract_lang
                 ]
                 subprocess.run(eval_cmd, check=True)
                 print(f"Evaluation completed: {results_file}")
@@ -272,6 +283,59 @@ def plot_consolidated_results(results_dirs):
     
     print("Consolidated plotting completed")
 
+def evaluate_only(args):
+    print(f"Starting evaluation for path: {args.evaluate_only_experiment_path}")
+
+    assert args.ocr_engine in ["paddleocr", "tesseract"], "Invalid OCR engine specified. Must be 'paddleocr' or 'tesseract'."
+
+    print(f"Using OCR engine: {args.ocr_engine}")
+
+    # Use os.walk to traverse the nested directory structure
+    for root, dirs, files in os.walk(args.evaluate_only_experiment_path):
+        # Looking for the leaf directories that contain the images and text files.
+        if not any(f.endswith('.png') for f in files):
+            continue
+
+        # 'root' is now the target directory, e.g., .../{model}_{length}/
+        results_dir = root
+        print(f"Processing directory: {results_dir}")
+
+        # Extract the language code directly from the directory structure.
+        # The parent of the 'results_dir' is the language code directory.
+        try:
+            language = Path(results_dir).parent.name
+            print(f"Language '{language}' detected from path.")
+        except IndexError:
+            print(f"Could not determine language for {results_dir}. Skipping.")
+            continue
+
+        # Define the output file path within the results directory
+        results_file = os.path.join(results_dir, "results_paddleocr.json")
+
+        # Map the detected language to the format required by PaddleOCR
+        if args.ocr_engine == "paddleocr":
+            ocr_lang = map_paddleocr_lang(language)
+        elif args.ocr_engine == "tesseract":
+            ocr_lang = map_tesseract_lang(language)
+
+        # Construct the evaluation command
+        eval_cmd = [
+            "python", "evaluate.py",
+            "-i", results_dir,
+            "-o", results_file,
+            "-l", ocr_lang,
+            "-e", args.ocr_engine,
+        ]
+
+        # Run the evaluation command
+        try:
+            subprocess.run(eval_cmd, check=True, capture_output=True, text=True)
+            print(f"Evaluation completed for {language}: {results_file}")
+        except subprocess.CalledProcessError as e:
+            print(f"Error evaluating {results_dir}:")
+            print(f"STDOUT: {e.stdout}")
+            print(f"STDERR: {e.stderr}")
+
 def main():
     """Main function to parse command line arguments and run experiments"""
     parser = argparse.ArgumentParser(description="Run text-to-image generation experiments in parallel")
@@ -287,6 +351,7 @@ def main():
                         help="Path to directory containing result files to plot")
     parser.add_argument("--evaluate_only_experiment_path", type=str, default=None,
                         help="Path to directory containing result files to evaluate")
+    parser.add_argument("--ocr_engine", type=str, default="paddleocr")
     args = parser.parse_args()
 
     # If plot_only_experiment_path is provided, only plot the results in that directory
@@ -299,22 +364,9 @@ def main():
         return
     
     if args.evaluate_only_experiment_path:
-        # structure
-        # Inputs: evaluate_only_experiment_path/{model}_{length}/*.{png,txt}
-        # Outputs: evaluate_only_experiment_path/{model}_{length}/results_{model}_{length}.json
-        for dir_name in os.listdir(args.evaluate_only_experiment_path):
-            if not os.path.isdir(os.path.join(args.evaluate_only_experiment_path, dir_name)) or dir_name == '.' or dir_name == '..':
-                continue
-            results_dir = os.path.join(args.evaluate_only_experiment_path, dir_name)
-            results_file = os.path.join(results_dir, f"results_{dir_name}.json")
-            eval_cmd = [
-                "python", "evaluate.py",
-                "-i", results_dir,
-                "-o", results_file,
-                "-l", "eng"
-            ]
-            subprocess.run(eval_cmd, check=True)
-            print(f"Evaluation completed: {results_file}")
+        # Structure: evaluate_only_experiment_path/{model}/{language_code}/{model}_{length}/*.{png,txt}
+        # Output: evaluate_only_experiment_path/{model}/{language_code}/{model}_{length}/results_paddleocr.json
+        evaluate_only(args)
         return
     
     # Load experiment configuration
